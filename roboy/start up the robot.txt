@@ -1,0 +1,149 @@
+
+0. Plug in power cable
+The multi plug directly connects the four AC/DC converters
+and the 12V supply for beamer, USB-Hub and cameras
+so just connect the multi plug
+
+--------------------------
+
+1. Start up laptop
+
+--------------------------
+
+2.1. Connect USB-Hub (Cameras, Mic, Speaker) with laptop [USB]
+2.2. Connect Can-Bus (Motors) with laptop [USB]
+2.3. Connect mini beamer with laptop [HDMI]
+
+--------------------------
+
+3.1. Start up mini beamer (by pressing the small button on its side)
+3.2. Go to HDMI mode with the mini beamer
+(if remote control is lost, there are setup buttons on the bottom of the beamer)
+3.3. Go to the laptop's settings -> settings manager -> display
+and make sure the external monitor is set to 'use this output'
+
+--------------------------
+
+4.1. Start up the speaker (blue light should be on), make sure volume is turned up
+4.2. Go to the sound settings on the laptop
+and make sure the input and output is set to the external audio adapter
+
+--------------------------
+
+5.1. Power on the 4 AC/DC converters for the motors
+5.2. Open terminal and go to
+$ cd trunk/bin/src/roboy/tools/RoboyTensionControl/
+5.3. Take Roboy's right arm
+
+WATCH OUT! When moving the arm, always hold on the shoulder joint with one hand.
+It is a REAL pain in the ass when the joint falls out. The motors will suck in the wire
+before you can react and press e and Enter to stop it. You will have to use RoboySingleMotorControl
+for all the arm muscles to loosen the shoulder to get it back in!!!)
+
+and run
+$ ./RightArmTensionControl
+Put the right Arm into the initialization position and
+first press the key
+e,
+then press
+Enter
+
+Initialization Position: Make sure the red part of the wire of Motor 22 and Motor 19 
+is just outside of the motor unit (ask Serge or Pey Yuen to show you that).
+The other Motors dont have to be correct.
+Also Make sure The red lines on the back of the elbow are just visible.
+(if you get CAN sending Errors, Check if the Cables are attached to Roboy's back
+and if the emergency button is not pressed)
+
+5.4. Repeat the same for the left arm.
+
+Initialization Position: Make sure the red/green part of the wire of most of the Motors in the front 
+is just outside of the motor unit. The motor unit is marked with the correct color you have to check.
+(Will not work for all motors. Just try to get close to exact.
+Ask Serge or Pey Yuen to show you that).
+
+--------------------------
+
+6.1. Go to
+$ cd ../RoboyInitialization/
+6.2. Run
+$ ./RoboyInitialization
+check if there are errors (red statements) displayed in the terminal.
+Except for motors 1,2,19,25,26 (for these errors are ok)
+If necessary, scroll back to check if there are errors.
+
+WATCH OUT! If there are Init Errors, Roboy will not run correctly and potentially damage its wires.
+If there are some, try to put the 'problematic motor' slightly into another position over TensionControl,
+and then run RoboyInitialization again.
+
+6.3. Run
+$ ./manualInitMotor19
+6.4. check if hand motors are in the correct 0-position
+0-Position: Fore arms fully open (thumbs pointing out, not in or up), hands fully open
+
+If not, go to
+$ cd ../RoboySingleMotorControl
+and run
+$ ./RoboySingleMotorControl
+then adjust 1, 2, 25, 26 so that hands and fore arms are open
+
+WATCH OUT! You may damage its wires if turning too much into one direction.
+- Check current position
+- Make sure you chose '1' for position control
+- Move in small steps first to get a feeling (e.g. in steps of 5000)
+
+6.5.
+Go back to the tools/RoboyInitialization folder if you left it
+run
+$ ./manualInit
+6.6.
+Go to
+$ cd ../RoboySingleMotorControl
+and run
+$ ./RoboySingleMotorControl
+check if motor 22 is around 250000. NOT 150000. If this is the case, try again from step 5.3.
+(you can leave the left arm)
+Do not move the motor. Just exit and run
+$ ./RoboySingleMotorControl
+again. check motor 19. Should be at 353362.
+
+--------------------------
+
+7.1. Open a new terminal tab
+Go to
+$ cd trunk/bin/src/roboy/main
+7.2.
+Run the State Machine:
+$ ./RoboyStateMachine ../../../../roboy/database/configuration/ConfigStateMachine.conf
+(if the cameras don't work and cause segfault crashes, then you can take the ConfigStateMachineNoVision.conf)
+7.3.
+click first on the GUI which is opening up and then change modes by pressing keys on the laptops keyboard
+(the speaker always needs 5sec to start up, so the first word in the first behaviour will probably not sound)
+
+--------------------------
+
+8.1. (optional)
+for starmind control mode:
+Open a new terminal tab
+$ cd trunk/RoboyStarmindGUI
+$ java -jar starmindCockpit.jar
+in the starmind Roboy Cockpit: click connect (leave port at 30000, address localhost)
+go to a certain mode from there or to mode 5 to control the robot over the cockpit
+
+--------------------------
+
+9.1. Exit by clicking on the GUI with the mouse and then press escape
+9.2. Shut down by powering off the AC/DC converters, the beamer (press the button on it) and the computer
+9.3. If Roboy's spine is very loose and it may fall of its table or possibly overuse it's
+spine wires after powering off, then goto RoboyTensionControl, run ./SpineTensionControl,
+hold Roboy in a straight position, wait until motors have pulled in, press e and Enter and then
+power off everything.
+
+
+
+
+
+
+
+
+
