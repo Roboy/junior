@@ -10,7 +10,7 @@ If you plan on building hardware from the CAD files, we strongly encourage to co
 If you want to cite this data in a publication please use:
 
     @website{roboyjunior,
-       author      = "Pfeifer, Rolf and Pey Yuen, Tao and Gravato Marques, Hugo and Weydert, Serge and Brum, Dominik and Weyland, Mathias and Hostettler, Rafael and Volkert, Fabian and Gmünder, Vitus and Halbeisen, Diana",
+       author      = "Pfeifer, Rolf and Tao, Pey Yuen and Gravato Marques, Hugo and Weydert, Serge and Brum, Dominik and Weyland, Mathias and Hostettler, Rafael and Volkert, Fabian and Gmünder, Vitus and Halbeisen, Diana",
        title       = "Roboy Anthropomimetic Robot",
        institution = "Artificial Intelligence Laboratory, University of Zurich",
        year        = "2013",
