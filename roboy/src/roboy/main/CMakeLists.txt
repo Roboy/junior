@@ -108,5 +108,4 @@ ADD_SUBDIRECTORY( ./introduction )
 #sADD_SUBDIRECTORY( ./visioninteraction )
 ADD_SUBDIRECTORY( ./testLegSwing )
 ADD_SUBDIRECTORY( ./theatre )
-ADD_SUBDIRECTORY( ./testFacial )
 
