@@ -1738,6 +1738,131 @@ int Robot::multipleBlocking(vector<SDOElement> checkList, int maxBlockMs) {
 	return SEND_SUCCESSFUL;
 }
 
+
+
+int maxRetries=2;
+int Robot::transmitSDO(int nodeID, int paramID, int address, int subIndex, int value, int dataSize, int maxBlockMs)
+{
+    int retryCount = 0;
+    int writeStatus=writeSDOSequence(nodeID, paramID, address,subIndex, value,dataSize, maxBlockMs);
+    if(writeStatus==SEND_SUCCESSFUL)
+    {
+        mtx_.lock();
+        while(true)
+        {
+            if(lineOpen)
+            {
+                TPCANRdMsg readMsg;
+                while(line.read(&readMsg, 100))
+                {
+                    retryCount++;
+                    PauseTimer timer(COMMS_SAMPLING_RATE_N);
+                    timer.wait();
+                    if(retryCount==maxRetries)
+                    {
+                        return -1;
+                    }
+                }
+
+                while(line.read(&readMsg, 100) != CAN_ERR_QRCVEMPTY) {
+
+                    #if MONITOR_COMMS == 1
+                        monitorComms(readMsg);
+                    #else
+                        traceCommsRX(readMsg.Msg);
+                        if(readMsg.Msg.ID > PDO1_START && readMsg.Msg.ID < PDO1_END) handlePDO(readMsg, 0);
+                        else if(readMsg.Msg.ID > PDO2_START && readMsg.Msg.ID < PDO2_END) handlePDO(readMsg, 1);
+                        else if(readMsg.Msg.ID > PDO3_START && readMsg.Msg.ID < PDO3_END) handlePDO(readMsg, 2);
+                        else if(readMsg.Msg.ID > PDO4_START && readMsg.Msg.ID < PDO4_END) handlePDO(readMsg, 3);
+                        else if(readMsg.Msg.ID > SDO_START && readMsg.Msg.ID < SDO_END) handleSDO(readMsg);
+                        else if(readMsg.Msg.ID > HEARTBEAT_START && readMsg.Msg.ID < HEARTBEAT_END) handleHeartbeat(readMsg);
+                        else if(readMsg.Msg.ID > EMERGENCY_START && readMsg.Msg.ID < EMERGENCY_END) handleEmergency(readMsg);
+                    #endif
+                }
+
+                return SEND_SUCCESSFUL;
+            }
+            else
+            {
+                return ERROR_LINE_NOT_OPEN;
+            }
+
+
+//            int readStatus= readPDOSequence(nodeID, paramID, address,subIndex, value,dataSize, refPDO, maxBlockMs));
+//            if(readStatus==SEND_SUCCESSFUL)
+//            {
+//                return SEND_SUCCESSFUL;
+//            }
+
+        }
+        mtx_.unlock();
+
+    }
+
+    return writeStatus;
+}
+
+int Robot::transmitSDO(int maxBlockMs)
+{
+    int retryCount = 0;
+    int writeStatus=writeSDOSequence(maxBlockMs);
+    if(writeStatus==SEND_SUCCESSFUL)
+    {
+        mtx_.lock();
+        while(true)
+        {
+            if(lineOpen)
+            {
+                TPCANRdMsg readMsg;
+                while(line.read(&readMsg, 100))
+                {
+                    retryCount++;
+                    PauseTimer timer(COMMS_SAMPLING_RATE_N);
+                    timer.wait();
+                    if(retryCount==maxRetries)
+                    {
+                        return -1;
+                    }
+                }
+
+                while(line.read(&readMsg, 100) != CAN_ERR_QRCVEMPTY) {
+
+                    #if MONITOR_COMMS == 1
+                        monitorComms(readMsg);
+                    #else
+                        traceCommsRX(readMsg.Msg);
+                        if(readMsg.Msg.ID > PDO1_START && readMsg.Msg.ID < PDO1_END) handlePDO(readMsg, 0);
+                        else if(readMsg.Msg.ID > PDO2_START && readMsg.Msg.ID < PDO2_END) handlePDO(readMsg, 1);
+                        else if(readMsg.Msg.ID > PDO3_START && readMsg.Msg.ID < PDO3_END) handlePDO(readMsg, 2);
+                        else if(readMsg.Msg.ID > PDO4_START && readMsg.Msg.ID < PDO4_END) handlePDO(readMsg, 3);
+                        else if(readMsg.Msg.ID > SDO_START && readMsg.Msg.ID < SDO_END) handleSDO(readMsg);
+                        else if(readMsg.Msg.ID > HEARTBEAT_START && readMsg.Msg.ID < HEARTBEAT_END) handleHeartbeat(readMsg);
+                        else if(readMsg.Msg.ID > EMERGENCY_START && readMsg.Msg.ID < EMERGENCY_END) handleEmergency(readMsg);
+                    #endif
+                }
+                return SEND_SUCCESSFUL;
+            }
+            else
+            {
+                return ERROR_LINE_NOT_OPEN;
+            }
+
+
+//            int readStatus= readPDOSequence(refPDO,maxBlockMs);
+//            if(readStatus==SEND_SUCCESSFUL)
+//            {
+//                return SEND_SUCCESSFUL;
+//            }
+
+
+        }
+        mtx_.unlock();
+
+    }
+
+    return writeStatus;
+}
+
 int Robot::writeSDOSequence(int maxBlockMs) {
 	int error;
 	unsigned int i;
@@ -1817,6 +1942,57 @@ int Robot::readSDOSequence(int maxBlockMs) {
 	return SEND_SUCCESSFUL;
 }
 
+
+int Robot::readPDOSequence(int refPDO, int maxBlockMs) {
+    int error, maxCycles, cycleNum;
+    unsigned int i;
+    PauseTimer waitTimer(REPLY_CHECKING_TIME_DELAY_NS);
+    bool allReceived;
+
+    for(i = 0; i < toRead.size(); i++) {
+        allMotors[toRead[i].nodeID].setParameter(toRead[i].paramID, toRead[i].value);
+        error = readObjectPDO(toRead[i].nodeID, refPDO);
+        if(error != SEND_SUCCESSFUL) {
+            toRead.clear();
+            TRACE_ERROR_ROBOT_LN("Sending Error: %d", error);
+            return error;
+        }
+    }
+
+    if(maxBlockMs == 0) {
+        toRead.clear();
+        return SEND_SUCCESSFUL;
+    }
+
+    maxCycles = maxBlockMs*1000000/REPLY_CHECKING_TIME_DELAY_NS;
+    cycleNum = 0;
+    while(true) {
+        allReceived = true;
+        for(i = 0; i < toRead.size(); i++) {
+            if(allMotors[toRead[i].nodeID].isUpdated(toRead[i].paramID) == false) {
+                allReceived = false;
+                break;
+            }
+        }
+        if(allReceived) break;
+
+        waitTimer.wait();
+        if(cycleNum > maxCycles && maxCycles > 0) {
+            TRACE_ERROR_ROBOT_LN("Time out, expected replies not received. Missing Replies: ");
+            for(i = 0; i < toRead.size(); i++) {
+                if(allMotors[toRead[i].nodeID].isUpdated(toRead[i].paramID) == false) {
+                    TRACE_ERROR_ROBOT_LN("  Motor ID: %d, Parameter: %d", toRead[i].nodeID, toRead[i].paramID);
+                }
+            }
+            toRead.clear();
+            return ERROR_NO_REPLY;
+        }
+        cycleNum++;
+    }
+    toRead.clear();
+    return SEND_SUCCESSFUL;
+}
+
 int Robot::singleBlockingValue(int motorID, int paramID, int value, int maxBlockMs, int alternateValue) {
 	PauseTimer waitTimer(REPLY_CHECKING_TIME_DELAY_NS);
 	int maxCycles, cycleNum;
@@ -1868,6 +2044,16 @@ int Robot::readSDOSequence(int motorID, int paramID, int address, int subIndex, 
 	error = readObjectSDO(motorID, address, subIndex);
 	if(error != SEND_SUCCESSFUL) return error;
 	return singleBlocking(motorID, paramID, maxBlockMs);
+}
+
+int Robot::readPDOSequence(int motorID, int paramID, int address, int subIndex, int refPDO, int maxBlockMs) {
+    int error;
+
+    allMotors[motorID].requestParameter(paramID);
+
+    error = readObjectPDO(motorID, refPDO);
+    if(error != SEND_SUCCESSFUL) return error;
+    return singleBlocking(motorID, paramID, maxBlockMs);
 }
 
 int Robot::updateParam(int motorID, int paramID, int maxBlockMs) {

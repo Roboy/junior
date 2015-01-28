@@ -331,6 +331,8 @@ class Robot : public MaxonCANOpen {
 		vector<int> forceControlMotorID;
 		vector<int> forceControlReferenceForce;
 		int robotLogFileIndex, robotErrorFileIndex;
+
+        boost::mutex mtx_;
 		
 		int neckRollAngle, neckPitchAngle, neckYawAngle;
 		dataArrayWrapper neckRollLookupTable, neckPitchLookupTable, neckYawLookupTable;
@@ -497,6 +499,10 @@ class Robot : public MaxonCANOpen {
 		int writeParam(int motorID, int paramID, int value, int maxBlockMs = DEFAULT_CAN_BUS_RESPONSE_WAIT_TIME_MS);
 		int writeParamMultiple(int motorID, int paramID, int value);
 		bool checkHealth(int motorID);
+
+
+        int transmitSDO(int nodeID, int paramID, int address, int subIndex, int value, int dataSize, int maxBlockMs = DEFAULT_CAN_BUS_RESPONSE_WAIT_TIME_MS);
+        int transmitSDO(int maxBlockMs = DEFAULT_CAN_BUS_RESPONSE_WAIT_TIME_MS);
 		
 		// set maxBloackMs to -1 for infinite waiting time, 0 for no block
 		// For handling of other SDOs
@@ -505,6 +511,9 @@ class Robot : public MaxonCANOpen {
 
 		int readSDOSequence(int nodeID, int paramID, int address, int subIndex, int maxBlockMs = DEFAULT_CAN_BUS_RESPONSE_WAIT_TIME_MS);
 		int readSDOSequence(int maxBlockMs = DEFAULT_CAN_BUS_RESPONSE_WAIT_TIME_MS);
+
+        int readPDOSequence(int nodeID, int paramID, int address, int subIndex,int refPDO,int maxBlockMs = DEFAULT_CAN_BUS_RESPONSE_WAIT_TIME_MS);
+        int readPDOSequence(int refPDO, int maxBlockMs = DEFAULT_CAN_BUS_RESPONSE_WAIT_TIME_MS);
 		
 		// NMT commands, set motorID = 0 for all nodes
 		int enterPreOperational(int motorID=0);
